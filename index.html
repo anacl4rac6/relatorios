@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Relatórios Operacionais</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF and jsPDF-AutoTable -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <!-- Signature Pad -->
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .form-container { background-color: #ffffff; border-radius: 0.75rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .form-label { color: #475569; font-weight: 500; }
+        .form-input, .form-textarea, .form-select { background-color: #f8fafc; border: 1px solid #e2e8f0; transition: border-color 0.2s, box-shadow 0.2s; border-radius: 0.375rem; }
+        .form-input:focus, .form-textarea:focus, .form-select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .btn-primary { background-color: #2563eb; color: white; transition: background-color 0.2s; font-weight: 600; border-radius: 0.5rem; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .btn-secondary { background-color: #64748b; color: white; transition: background-color 0.2s; border-radius: 0.375rem; }
+        .btn-secondary:hover { background-color: #475569; }
+        #signature-pad { border: 2px dashed #cbd5e1; border-radius: 0.5rem; cursor: crosshair; }
+        /* Tab styles */
+        .tab-button { color: #475569; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab-button:hover { color: #1e293b; }
+        .tab-button.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fieldset-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1.5rem; }
+    </style>
+</head>
+<body class="antialiased text-gray-800">
+
+    <div class="container mx-auto max-w-7xl px-4 py-8 sm:py-12">
+
+        <header class="text-center mb-10">
+            <div class="flex justify-center items-center mb-4">
+                <img src="https://i.postimg.cc/GhYJ40wm/Fj8-Bd-AGWQAAr-Cj-H-removebg-preview.png" alt="Brasão da Instituição" class="h-24" id="logo-image" crossorigin="anonymous" onerror="this.onerror=null;this.src='https://placehold.co/100x100/e2e8f0/4a5568?text=Bras%C3%A3o';">
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900">Sistema de Relatórios Operacionais</h1>
+            <p class="text-md text-gray-600 mt-1">Geração de Documentação de Campo</p>
+        </header>
+
+        <form id="reportForm" class="form-container overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3">
+                <!-- Coluna Principal (Esquerda) -->
+                <div class="lg:col-span-2 p-6 sm:p-8">
+                    <!-- Tab Navigation -->
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="flex flex-wrap -mb-px" aria-label="Tabs">
+                            <button type="button" class="tab-button active flex items-center gap-2 py-3 px-4 text-sm" data-tab="relatorio_geral"><i class="ph-bold ph-files"></i>Relatório Geral</button>
+                            <button type="button" class="tab-button flex items-center gap-2 py-3 px-4 text-sm" data-tab="abordagem_individuo"><i class="ph-bold ph-person"></i>Abordagem a Indivíduo</button>
+                            <button type="button" class="tab-button flex items-center gap-2 py-3 px-4 text-sm" data-tab="abordagem_veiculo"><i class="ph-bold ph-car"></i>Abordagem a Veículo</button>
+                            <button type="button" class="tab-button flex items-center gap-2 py-3 px-4 text-sm" data-tab="apoio_ocorrencia"><i class="ph-bold ph-users-three"></i>Apoio a Ocorrência</button>
+                            <button type="button" class="tab-button flex items-center gap-2 py-3 px-4 text-sm" data-tab="ponto_base"><i class="ph-bold ph-map-pin"></i>Ponto Base (PB)</button>
+                            <button type="button" class="tab-button flex items-center gap-2 py-3 px-4 text-sm" data-tab="estoque"><i class="ph-bold ph-archive"></i>Visita de Estoque</button>
+                            <button type="button" class="tab-button flex items-center gap-2 py-3 px-4 text-sm" data-tab="averiguacao"><i class="ph-bold ph-magnifying-glass"></i>Visita de Averiguação</button>
+                        </nav>
+                    </div>
+
+                    <div id="tab-content-container">
+                        <!-- Conteúdo das abas aqui -->
+                        <div id="tab-relatorio_geral" class="tab-content active">...</div>
+                        <div id="tab-abordagem_individuo" class="tab-content">...</div>
+                        <!-- etc. -->
+                    </div>
+
+                    <!-- CAMPO DE DESCRIÇÃO NARRATIVA (COMUM A TODAS AS ABAS) -->
+                    <fieldset class="fieldset-card mt-6">
+                        <legend class="text-lg font-semibold text-gray-700 mb-4">Descrição Narrativa da Ocorrência</h2 >
+                        <textarea id="geral_narrativa" name="geral_narrativa" rows="10" class="w-full p-2 form-textarea" placeholder="Descreva aqui, em detalhes, o desenrolar da ocorrência, fatos observados e ações tomadas. Este campo aparecerá em todos os relatórios."></textarea>
+                    </fieldset>
+                </div>
+
+                <!-- Coluna Lateral (Direita) -->
+                <div class="lg:col-span-1 bg-slate-50 p-6 sm:p-8 border-t lg:border-t-0 lg:border-l border-gray-200">
+                    <div class="space-y-6 sticky top-8">
+                        <fieldset>
+                            <h2 class="text-lg font-semibold text-gray-700 mb-4">Responsável pelo Relatório</h2>
+                            <div class="space-y-4">
+                                <div><label for="agente_nome" class="block text-sm form-label mb-1">Nome Completo</label><input type="text" id="agente_nome" name="agente_nome" class="w-full p-2 form-input" required></div>
+                                <div><label for="agente_matricula" class="block text-sm form-label mb-1">Matrícula / ID</label><input type="text" id="agente_matricula" name="agente_matricula" class="w-full p-2 form-input" required></div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <h2 class="text-lg font-semibold text-gray-700 mb-4">Assinatura</h2>
+                            <div class="wrapper"><canvas id="signature-pad" class="w-full h-40 bg-white"></canvas></div>
+                            <div class="mt-2"><button type="button" id="clear-signature" class="btn-secondary text-xs font-semibold py-1 px-3">Limpar</button></div>
+                        </fieldset>
+
+                        <div class="pt-6 border-t">
+                            <button type="submit" class="btn-primary w-full text-base py-3 px-8 shadow-lg hover:shadow-xl transition-shadow">Gerar Documento (PDF)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        // --- Tab Handling ---
+        const tabs = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        let activeTab = 'relatorio_geral';
+
+        // Preencher o conteúdo das abas que foram omitidas no HTML para brevidade
+        document.getElementById('tab-content-container').innerHTML = `
+            <div id="tab-relatorio_geral" class="tab-content active">
+                <fieldset class="fieldset-card">
+                    <legend class="text-lg font-semibold text-gray-700 mb-4">Estrutura do Documento</legend>
+                    <div class="space-y-4">
+                        <div><label for="geral_titulo" class="block text-sm form-label mb-1">Título do Documento</label><input type="text" id="geral_titulo" name="geral_titulo" class="w-full p-2 form-input" placeholder="Ex: ORDEM DE SERVIÇO Nº 004/2025"></div>
+                        <div><label for="geral_assunto" class="block text-sm form-label mb-1">Assunto</label><textarea id="geral_assunto" name="geral_assunto" rows="2" class="w-full p-2 form-textarea"></textarea></div>
+                        <div><label for="geral_considerando" class="block text-sm form-label mb-1">Considerando</label><textarea id="geral_considerando" name="geral_considerando" rows="3" class="w-full p-2 form-textarea"></textarea></div>
+                        <div><label for="geral_determinacao" class="block text-sm form-label mb-1">Fatos / Determinação</label><textarea id="geral_determinacao" name="geral_determinacao" rows="5" class="w-full p-2 form-textarea"></textarea></div>
+                    </div>
+                </fieldset>
+            </div>
+            <div id="tab-abordagem_individuo" class="tab-content">
+                <fieldset class="fieldset-card">
+                    <legend class="text-lg font-semibold text-gray-700 mb-4">Detalhes da Abordagem a Indivíduo</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label for="ind_local" class="block text-sm form-label mb-1">Local</label><input type="text" id="ind_local" name="ind_local" class="w-full p-2 form-input"></div>
+                        <div><label for="ind_nome" class="block text-sm form-label mb-1">Nome do Abordado</label><input type="text" id="ind_nome" name="ind_nome" class="w-full p-2 form-input"></div>
+                        <div><label for="ind_documento" class="block text-sm form-label mb-1">Documento</label><input type="text" id="ind_documento" name="ind_documento" class="w-full p-2 form-input"></div>
+                        <div><label for="ind_motivo" class="block text-sm form-label mb-1">Motivo</label><input type="text" id="ind_motivo" name="ind_motivo" class="w-full p-2 form-input"></div>
+                    </div>
+                </fieldset>
+            </div>
+            <div id="tab-abordagem_veiculo" class="tab-content">
+                 <fieldset class="fieldset-card">
+                    <legend class="text-lg font-semibold text-gray-700 mb-4">Detalhes da Abordagem a Veículo</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label for="vei_local" class="block text-sm form-label mb-1">Local</label><input type="text" id="vei_local" name="vei_local" class="w-full p-2 form-input"></div>
+                        <div><label for="vei_placa" class="block text-sm form-label mb-1">Placa</label><input type="text" id="vei_placa" name="vei_placa" class="w-full p-2 form-input"></div>
+                        <div><label for="vei_modelo" class="block text-sm form-label mb-1">Modelo e Cor</label><input type="text" id="vei_modelo" name="vei_modelo" class="w-full p-2 form-input"></div>
+                        <div><label for="vei_condutor" class="block text-sm form-label mb-1">Condutor</label><input type="text" id="vei_condutor" name="vei_condutor" class="w-full p-2 form-input"></div>
+                    </div>
+                </fieldset>
+            </div>
+            <div id="tab-apoio_ocorrencia" class="tab-content">
+                <fieldset class="fieldset-card">
+                    <legend class="text-lg font-semibold text-gray-700 mb-4">Detalhes do Apoio a Ocorrência</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label for="apo_protocolo" class="block text-sm form-label mb-1">Protocolo Principal</label><input type="text" id="apo_protocolo" name="apo_protocolo" class="w-full p-2 form-input"></div>
+                        <div><label for="apo_unidade" class="block text-sm form-label mb-1">Unidade Solicitante</label><input type="text" id="apo_unidade" name="apo_unidade" class="w-full p-2 form-input"></div>
+                    </div>
+                </fieldset>
+            </div>
+            <div id="tab-ponto_base" class="tab-content">
+                <fieldset class="fieldset-card">
+                    <legend class="text-lg font-semibold text-gray-700 mb-4">Relatório de Ponto Base (PB)</legend>
+                    <div><label for="pb_local" class="block text-sm form-label mb-1">Local do PB</label><input type="text" id="pb_local" name="pb_local" class="w-full p-2 form-input"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div><label for="pb_inicio" class="block text-sm form-label mb-1">Início</label><input type="time" id="pb_inicio" name="pb_inicio" class="w-full p-2 form-input"></div>
+                        <div><label for="pb_fim" class="block text-sm form-label mb-1">Término</label><input type="time" id="pb_fim" name="pb_fim" class="w-full p-2 form-input"></div>
+                    </div>
+                </fieldset>
+            </div>
+            <div id="tab-estoque" class="tab-content">
+                <fieldset class="fieldset-card">
+                    <legend class="text-lg font-semibold text-gray-700 mb-4">Detalhes da Visita de Estoque</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label for="estoque_local" class="block text-sm form-label mb-1">Local</label><input type="text" id="estoque_local" name="estoque_local" class="w-full p-2 form-input"></div>
+                        <div><label for="estoque_responsavel" class="block text-sm form-label mb-1">Responsável</label><input type="text" id="estoque_responsavel" name="estoque_responsavel" class="w-full p-2 form-input"></div>
+                    </div>
+                </fieldset>
+            </div>
+            <div id="tab-averiguacao" class="tab-content">
+                <fieldset class="fieldset-card">
+                    <legend class="text-lg font-semibold text-gray-700 mb-4">Detalhes da Visita de Averiguação</legend>
+                     <div class="space-y-4">
+                        <div><label for="av_local" class="block text-sm form-label mb-1">Local</label><input type="text" id="av_local" name="av_local" class="w-full p-2 form-input"></div>
+                        <div><label for="av_motivo" class="block text-sm form-label mb-1">Motivo</label><input type="text" id="av_motivo" name="av_motivo" class="w-full p-2 form-input"></div>
+                    </div>
+                </fieldset>
+            </div>
+        `;
+
+        document.querySelectorAll('.tab-button').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.tab-button').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(`tab-${tabName}`).classList.add('active');
+                activeTab = tabName;
+            });
+        });
+
+        // --- Signature Pad ---
+        const canvas = document.getElementById('signature-pad');
+        const signaturePad = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear();
+        }
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+        document.getElementById('clear-signature').addEventListener('click', () => signaturePad.clear());
+
+        // --- PDF Generation ---
+        const { jsPDF } = window.jspdf;
+        document.getElementById('reportForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Gerando...';
+
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+            const now = new Date();
+            const protocol = `RO-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+            const doc = new jsPDF();
+
+            const addHeader = (docInstance, title) => {
+                const logo = document.getElementById('logo-image');
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = logo.naturalWidth; canvas.height = logo.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(logo, 0, 0, logo.naturalWidth, logo.naturalHeight);
+                    docInstance.addImage(canvas.toDataURL('image/png'), 'PNG', 15, 12, 25, 25);
+                } catch (e) { docInstance.text("[Brasão]", 20, 25); }
+                docInstance.setFontSize(14).setFont('helvetica', 'bold').text(title.toUpperCase(), docInstance.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+                docInstance.setFontSize(10).setFont('helvetica', 'normal').text(`PROTOCOLO: ${protocol}`, docInstance.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+                docInstance.text(`Data de Emissão: ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`, docInstance.internal.pageSize.getWidth() / 2, 34, { align: 'center' });
+                docInstance.setLineWidth(0.5).line(10, 45, 200, 45);
+            };
+            
+            const addSignature = (docInstance, finalY) => {
+                if (!signaturePad.isEmpty()) {
+                    const sigY = finalY + 15 > 260 ? 40 : finalY + 15;
+                    if (finalY + 15 > 260) { docInstance.addPage(); addHeader(docInstance, "Continuação do Relatório"); }
+                    
+                    const sigX = docInstance.internal.pageSize.getWidth() / 2;
+                    docInstance.addImage(signaturePad.toDataURL("image/png"), 'PNG', sigX - 30, sigY - 10, 60, 30);
+                    docInstance.setLineWidth(0.5).line(sigX - 40, sigY + 25, sigX + 40, sigY + 25);
+                    docInstance.setFontSize(10).text(data.agente_nome, sigX, sigY + 30, { align: 'center' });
+                    docInstance.setFont('helvetica', 'bold').text('Responsável pelo Relatório', sigX, sigY + 35, { align: 'center' });
+                }
+            };
+
+            const addNarrativeBlock = (docInstance, text, cursor) => {
+                if (text) {
+                    docInstance.setFontSize(11).setFont('helvetica', 'bold').text("DESCRIÇÃO NARRATIVA", 15, cursor.y);
+                    cursor.y += 6;
+                    docInstance.setFontSize(11).setFont('helvetica', 'normal');
+                    const lines = docInstance.splitTextToSize(text, 180);
+                    lines.forEach(line => {
+                        if (cursor.y > 270) { docInstance.addPage(); cursor.y = 20; }
+                        docInstance.text(line, 15, cursor.y);
+                        cursor.y += 6;
+                    });
+                    cursor.y += 4;
+                }
+                return cursor;
+            };
+
+            if (activeTab === 'relatorio_geral') {
+                addHeader(doc, "Documento Operacional");
+                let cursor = { y: 60 };
+                const leftMargin = 15;
+                const usableWidth = 180;
+
+                doc.setFontSize(12).setFont('helvetica', 'bold').text(data.geral_titulo.toUpperCase(), doc.internal.pageSize.getWidth() / 2, cursor.y, { align: 'center' });
+                cursor.y += 15;
+
+                const addTextBlock = (heading, text) => {
+                    if (text) {
+                        doc.setFontSize(11).setFont('helvetica', 'bold').text(heading.toUpperCase(), leftMargin, cursor.y);
+                        cursor.y += 6;
+                        doc.setFontSize(11).setFont('helvetica', 'normal');
+                        const lines = doc.splitTextToSize(text, usableWidth);
+                        lines.forEach(line => {
+                            if (cursor.y > 270) { doc.addPage(); cursor.y = 20; }
+                            doc.text(line, leftMargin, cursor.y);
+                            cursor.y += 6;
+                        });
+                        cursor.y += 8;
+                    }
+                };
+                addTextBlock("Assunto:", data.geral_assunto);
+                addTextBlock("Considerando:", data.geral_considerando);
+                addTextBlock("Fatos / Determinação:", data.geral_determinacao);
+                cursor = addNarrativeBlock(doc, data.geral_narrativa, cursor);
+                addSignature(doc, cursor.y);
+            } else {
+                let reportTitle = "Relatório Operacional";
+                let tableData = [];
+                // Switch case for other tabs
+                switch (activeTab) { /* ... all cases ... */ }
+                
+                const commonData = [
+                    { title: '1. RESPONSÁVEL', content: '' },
+                    { title: 'Nome Completo', content: data.agente_nome }, { title: 'Matrícula / ID', content: data.agente_matricula },
+                    { title: '2. DETALHES DA ATIVIDADE', content: '' }
+                ];
+                const body = [
+                    ...commonData.map(row => row.content === '' ? [{ content: row.title, colSpan: 2, styles: { fontStyle: 'bold', fillColor: ['#f1f5f9'] } }] : [row.title, row.content]),
+                    ...tableData.map(row => [row.title, row.content])
+                ];
+                addHeader(doc, reportTitle);
+                doc.autoTable({
+                    startY: 50,
+                    head: [['CAMPO', 'INFORMAÇÃO']],
+                    body: body,
+                    theme: 'grid',
+                    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+                    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 }, 1: { cellWidth: 'auto' } },
+                    didDrawPage: (data) => { if (data.pageNumber > 1) addHeader(doc, reportTitle); }
+                });
+                
+                let cursor = { y: doc.lastAutoTable.finalY + 4 || 60 };
+                cursor = addNarrativeBlock(doc, data.geral_narrativa, cursor);
+                addSignature(doc, cursor.y);
+            }
+
+            doc.save(`relatorio_${activeTab}_${protocol}.pdf`);
+            submitButton.disabled = false;
+            submitButton.textContent = 'Gerar Documento (PDF)';
+        });
+    </script>
+</body>
+</html>
